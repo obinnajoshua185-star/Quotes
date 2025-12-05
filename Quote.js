@@ -1,7 +1,12 @@
+// ============================================
+// QUOTES APP - MODIFIED FRONTEND
+// Now with category filtering and 25 quotes
+// ============================================
+
 // API Configuration
 const API_BASE = "http://localhost:3000";
 
-// DOM Elements
+// DOM Elements - NEW: Added categorySelect and randomFiveBtn
 const loadQuotesBtn = document.getElementById("loadQuotes");
 const refreshQuotesBtn = document.getElementById("refreshQuotes");
 const clearQuotesBtn = document.getElementById("clearQuotes");
@@ -9,33 +14,103 @@ const searchInput = document.getElementById("searchInput");
 const quotesContainer = document.getElementById("quotesContainer");
 const messageDiv = document.getElementById("message");
 const loadingMessageDiv = document.getElementById("loadingMessage");
+const randomQuoteBtn = document.getElementById("randomQuoteBtn");
+const categorySelect = document.getElementById("categorySelect"); // ✅ NEW
+const randomFiveBtn = document.getElementById("randomFiveBtn"); // ✅ NEW
 
 // State Management
 let allQuotes = [];
 let filteredQuotes = [];
+let categories = []; // ✅ NEW: Store categories
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", function () {
   initializeApp();
 });
 
-function initializeApp() {
+async function initializeApp() {
+  // ✅ NEW: Load categories first
+  await loadCategories();
+
   // Add event listeners to buttons
-  loadQuotesBtn.addEventListener("click", loadAllQuotes);
-  refreshQuotesBtn.addEventListener("click", refreshQuotes);
-  clearQuotesBtn.addEventListener("click", clearQuotes);
-  searchInput.addEventListener("input", handleSearch);
+  if (loadQuotesBtn) loadQuotesBtn.addEventListener("click", loadAllQuotes);
+  if (refreshQuotesBtn)
+    refreshQuotesBtn.addEventListener("click", refreshQuotes);
+  if (clearQuotesBtn) clearQuotesBtn.addEventListener("click", clearQuotes);
+  if (searchInput) searchInput.addEventListener("input", handleSearch);
+  if (randomQuoteBtn) randomQuoteBtn.addEventListener("click", loadRandomQuote);
+
+  // ✅ NEW: Category selector event
+  if (categorySelect)
+    categorySelect.addEventListener("change", handleCategoryChange);
+
+  // ✅ NEW: Random 5 button event
+  if (randomFiveBtn)
+    randomFiveBtn.addEventListener("click", () => loadRandomQuotes(5));
 
   // Show welcome message
   showWelcomeMessage();
 }
 
-// Main Functions
+// ✅ NEW FUNCTION: Load categories from API
+async function loadCategories() {
+  try {
+    const response = await fetch(`${API_BASE}/categories`);
+    if (response.ok) {
+      categories = await response.json();
+      populateCategoryDropdown();
+      console.log(`Loaded ${categories.length} categories`);
+    }
+  } catch (error) {
+    console.error("Error loading categories:", error);
+    // Fallback categories
+    categories = [
+      { name: "wisdom", count: 5 },
+      { name: "inspiration", count: 5 },
+      { name: "success", count: 5 },
+      { name: "life", count: 5 },
+      { name: "humor", count: 5 },
+    ];
+    populateCategoryDropdown();
+  }
+}
+
+// ✅ NEW FUNCTION: Populate category dropdown
+function populateCategoryDropdown() {
+  if (!categorySelect) return;
+
+  categorySelect.innerHTML = '<option value="">All Categories</option>';
+
+  categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.name;
+    option.textContent = `${capitalizeFirst(category.name)} (${
+      category.count
+    })`;
+    categorySelect.appendChild(option);
+  });
+}
+
+// ✅ NEW FUNCTION: Capitalize first letter
+function capitalizeFirst(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// ✅ MODIFIED: Now supports category filtering
 async function loadAllQuotes() {
   showLoading("Loading inspirational quotes...");
 
   try {
-    const response = await fetch(`${API_BASE}/quotes`);
+    // ✅ NEW: Get selected category
+    const selectedCategory = categorySelect ? categorySelect.value : "";
+
+    // ✅ MODIFIED: Build URL with optional category filter
+    let url = `${API_BASE}/quotes`;
+    if (selectedCategory) {
+      url += `?category=${selectedCategory}`;
+    }
+
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -45,7 +120,13 @@ async function loadAllQuotes() {
     filteredQuotes = [...allQuotes];
 
     displayQuotes(allQuotes);
-    showMessage(`Successfully loaded ${allQuotes.length} quotes`, "success");
+
+    // ✅ MODIFIED: Show category in success message
+    const categoryText = selectedCategory ? `${selectedCategory} ` : "";
+    showMessage(
+      `Successfully loaded ${allQuotes.length} ${categoryText}quotes`,
+      "success"
+    );
   } catch (error) {
     console.error("Error loading quotes:", error);
     showMessage(
@@ -58,6 +139,108 @@ async function loadAllQuotes() {
   }
 }
 
+// ✅ NEW FUNCTION: Load random quotes (count parameter)
+async function loadRandomQuotes(count = 5) {
+  showLoading(`Loading ${count} random quotes...`);
+
+  try {
+    const response = await fetch(`${API_BASE}/quotes/random?count=${count}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const randomQuotes = await response.json();
+
+    // Update state with random quotes
+    allQuotes = randomQuotes;
+    filteredQuotes = [...randomQuotes];
+
+    displayQuotes(randomQuotes);
+    showMessage(`Loaded ${randomQuotes.length} random quotes`, "success");
+  } catch (error) {
+    console.error("Error loading random quotes:", error);
+    showMessage("Error loading random quotes", "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ✅ MODIFIED: Load single random quote
+async function loadRandomQuote() {
+  showLoading("Fetching a random quote...");
+
+  try {
+    const response = await fetch(`${API_BASE}/quote`);
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const randomQuote = await response.json();
+
+    // Display just the random quote
+    quotesContainer.innerHTML = `
+      <div class="quote-card featured" data-category="${
+        randomQuote.category || ""
+      }">
+        <div class="quote-text">"${escapeHtml(randomQuote.quote)}"</div>
+        <div class="quote-author">— ${escapeHtml(randomQuote.author)}</div>
+        ${
+          randomQuote.category
+            ? `<div class="quote-category">${capitalizeFirst(
+                randomQuote.category
+              )}</div>`
+            : ""
+        }
+      </div>
+    `;
+
+    // Update state
+    allQuotes = [randomQuote];
+    filteredQuotes = [randomQuote];
+
+    showMessage("🎲 Random quote loaded successfully!", "success");
+  } catch (error) {
+    console.error("Error loading random quote:", error);
+    showMessage("Error loading random quote", "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+// ✅ NEW FUNCTION: Handle category change
+function handleCategoryChange() {
+  const selectedCategory = categorySelect.value;
+
+  if (selectedCategory === "") {
+    // If "All Categories" is selected, show current quotes
+    if (allQuotes.length > 0) {
+      displayQuotes(allQuotes);
+    }
+  } else {
+    // Filter existing quotes by category
+    const filtered = allQuotes.filter(
+      (quote) => quote.category === selectedCategory
+    );
+
+    if (filtered.length > 0) {
+      filteredQuotes = filtered;
+      displayQuotes(filtered);
+      showMessage(
+        `Showing ${filtered.length} ${selectedCategory} quotes`,
+        "info"
+      );
+    } else if (allQuotes.length > 0) {
+      showMessage(
+        `No ${selectedCategory} quotes in current selection. Try loading quotes first.`,
+        "warning"
+      );
+    }
+  }
+}
+
+// MODIFIED refreshQuotes to use new random function
 async function refreshQuotes() {
   if (allQuotes.length === 0) {
     showMessage("No quotes to refresh. Please load quotes first.", "warning");
@@ -67,11 +250,8 @@ async function refreshQuotes() {
   showLoading("Refreshing quotes...");
 
   try {
-    // For demonstration, we'll shuffle the existing quotes
-    // In a real app, you might fetch new data from the server
-    const shuffledQuotes = [...allQuotes].sort(() => Math.random() - 0.5);
-    displayQuotes(shuffledQuotes);
-    showMessage("Quotes refreshed successfully!", "success");
+    // ✅ MODIFIED: Use new random quotes function
+    await loadRandomQuotes(5);
   } catch (error) {
     console.error("Error refreshing quotes:", error);
     showMessage("Error refreshing quotes", "error");
@@ -83,11 +263,13 @@ async function refreshQuotes() {
 function clearQuotes() {
   allQuotes = [];
   filteredQuotes = [];
-  searchInput.value = "";
+  if (searchInput) searchInput.value = "";
+  if (categorySelect) categorySelect.value = ""; // ✅ NEW: Reset category
   showWelcomeMessage();
-  showMessage("All quotes cleared", "info");
+  showMessage("🗑️ All quotes cleared", "info");
 }
 
+// ✅ MODIFIED: Now searches category too
 function handleSearch() {
   const searchTerm = searchInput.value.toLowerCase().trim();
 
@@ -97,19 +279,22 @@ function handleSearch() {
     filteredQuotes = allQuotes.filter(
       (quote) =>
         quote.quote.toLowerCase().includes(searchTerm) ||
-        quote.author.toLowerCase().includes(searchTerm)
+        quote.author.toLowerCase().includes(searchTerm) ||
+        (quote.category && quote.category.toLowerCase().includes(searchTerm)) // ✅ NEW
     );
   }
 
   if (filteredQuotes.length === 0 && allQuotes.length > 0) {
-    displayNoResults();
+    displayNoResults(searchTerm);
   } else {
     displayQuotes(filteredQuotes);
   }
 }
 
-// Display Functions
+// ✅ MODIFIED: Now shows category badge
 function displayQuotes(quotes) {
+  if (!quotesContainer) return;
+
   if (!quotes || quotes.length === 0) {
     displayNoResults();
     return;
@@ -118,9 +303,18 @@ function displayQuotes(quotes) {
   const quotesHTML = quotes
     .map(
       (quote) => `
-        <div class="quote-card" data-id="${quote.id}">
-            <div class="quote-text">${escapeHtml(quote.quote)}</div>
-            <div class="quote-author">${escapeHtml(quote.author)}</div>
+        <div class="quote-card" data-id="${quote.id}" data-category="${
+        quote.category || ""
+      }">
+            <div class="quote-text">"${escapeHtml(quote.quote)}"</div>
+            <div class="quote-author">— ${escapeHtml(quote.author)}</div>
+            ${
+              quote.category
+                ? `<div class="quote-category">${capitalizeFirst(
+                    quote.category
+                  )}</div>`
+                : ""
+            }
         </div>
     `
     )
@@ -129,58 +323,79 @@ function displayQuotes(quotes) {
   quotesContainer.innerHTML = quotesHTML;
 }
 
-function displayNoResults() {
+function displayNoResults(searchTerm = "") {
+  if (!quotesContainer) return;
+
   quotesContainer.innerHTML = `
-        <div class="no-results">
-            <i class="fas fa-search"></i>
-            <h3>No quotes found</h3>
-            <p>Try adjusting your search terms or load quotes first</p>
-        </div>
-    `;
+    <div class="no-results">
+      <i class="fas fa-search"></i>
+      <h3>No quotes found${searchTerm ? ` for "${searchTerm}"` : ""}</h3>
+      <p>Try adjusting your search terms or load quotes first</p>
+      ${
+        allQuotes.length === 0
+          ? '<button onclick="loadAllQuotes()" class="btn btn-primary mt-3">' +
+            '<i class="fas fa-download"></i> Load Quotes</button>'
+          : ""
+      }
+    </div>
+  `;
 }
 
 function displayErrorState() {
+  if (!quotesContainer) return;
+
   quotesContainer.innerHTML = `
-        <div class="error-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h3>Unable to load quotes</h3>
-            <p>Please check if the server is running on port 3000</p>
-            <button onclick="loadAllQuotes()" class="btn btn-primary">
-                <i class="fas fa-redo"></i>
-                Try Again
-            </button>
-        </div>
-    `;
+    <div class="error-state">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h3>Connection Error</h3>
+      <p>Unable to connect to the quotes server</p>
+      <button onclick="loadAllQuotes()" class="btn btn-primary">
+        <i class="fas fa-redo"></i> Try Again
+      </button>
+    </div>
+  `;
 }
 
+// ✅ MODIFIED: Updated welcome message
 function showWelcomeMessage() {
+  if (!quotesContainer) return;
+
+  const totalCategories = categories.length || 5;
+  const totalQuotes = categories.reduce((sum, cat) => sum + cat.count, 0) || 25;
+
   quotesContainer.innerHTML = `
-        <div class="welcome-state">
-            <i class="fas fa-lightbulb welcome-icon"></i>
-            <h3>Welcome to Quote Explorer</h3>
-            <p>Click "Load Quotes" to discover inspirational wisdom</p>
-        </div>
-    `;
+    <div class="welcome-state">
+      <i class="fas fa-lightbulb"></i>
+      <h3>Welcome to Quote Explorer</h3>
+      <p>Now with ${totalQuotes} quotes across ${totalCategories} categories!</p>
+      <p>Select a category from the dropdown or click "Load Quotes" to begin</p>
+    </div>
+  `;
 }
 
-// Utility Functions
+// Utility Functions (unchanged but included for completeness)
 function showMessage(text, type = "info") {
-  // Remove any existing message classes
-  messageDiv.className = "message";
+  if (!messageDiv) return;
 
-  // Add appropriate class based on type
+  messageDiv.className = "message";
   messageDiv.classList.add(`message-${type}`);
 
-  // Set message text
-  messageDiv.innerHTML = `
-        <i class="fas fa-${getIconForMessageType(type)}"></i>
-        ${text}
-    `;
+  const icons = {
+    success: "check-circle",
+    error: "exclamation-circle",
+    warning: "exclamation-triangle",
+    info: "info-circle",
+  };
 
-  // Show the message
+  const icon = icons[type] || "info-circle";
+
+  messageDiv.innerHTML = `
+    <i class="fas fa-${icon}"></i>
+    ${text}
+  `;
+
   messageDiv.style.display = "block";
 
-  // Auto-hide success messages after 3 seconds
   if (type === "success") {
     setTimeout(() => {
       messageDiv.style.display = "none";
@@ -188,31 +403,25 @@ function showMessage(text, type = "info") {
   }
 }
 
-function getIconForMessageType(type) {
-  const icons = {
-    success: "check-circle",
-    error: "exclamation-circle",
-    warning: "exclamation-triangle",
-    info: "info-circle",
-  };
-  return icons[type] || "info-circle";
-}
+function showLoading(text = "Loading...") {
+  if (!loadingMessageDiv) return;
 
-function showLoading(text) {
   loadingMessageDiv.innerHTML = `
-        <div class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i>
-            ${text}
-        </div>
-    `;
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      ${text}
+    </div>
+  `;
   loadingMessageDiv.style.display = "block";
 }
 
 function hideLoading() {
+  if (!loadingMessageDiv) return;
   loadingMessageDiv.style.display = "none";
 }
 
 function escapeHtml(unsafe) {
+  if (!unsafe) return "";
   return unsafe
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -221,84 +430,60 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-// Add these styles to your CSS for the new states
-const additionalStyles = `
-    .message {
-        display: none;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 500;
-        text-align: center;
-        margin-bottom: 1rem;
-        animation: slideIn 0.3s ease;
-    }
-    
-    .message-success {
-        background: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-    
-    .message-error {
-        background: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-    
-    .message-warning {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }
-    
-    .message-info {
-        background: #d1ecf1;
-        color: #0c5460;
-        border: 1px solid #bee5eb;
-    }
-    
-    .loading-state {
-        text-align: center;
-        color: white;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-    
-    .no-results, .error-state {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 3rem 2rem;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .no-results i, .error-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        color: var(--success-color);
-    }
-    
-    .error-state i {
-        color: var(--warning-color);
-    }
-    
-    .fa-spin {
-        animation: fa-spin 1s infinite linear;
-    }
-    
-    @keyframes fa-spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+// ✅ NEW: Inject category styles
+const categoryStyles = `
+.quote-category {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 10px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.quote-card[data-category="wisdom"] .quote-category {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.quote-card[data-category="inspiration"] .quote-category {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.quote-card[data-category="success"] .quote-category {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.quote-card[data-category="life"] .quote-category {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border-color: rgba(139, 92, 246, 0.2);
+}
+
+.quote-card[data-category="humor"] .quote-category {
+    background: rgba(14, 165, 233, 0.1);
+    color: #0ea5e9;
+    border-color: rgba(14, 165, 233, 0.2);
+}
 `;
 
-// Inject additional styles
-const styleSheet = document.createElement("style");
-styleSheet.textContent = additionalStyles;
-document.head.appendChild(styleSheet);
+// Inject styles
+document.addEventListener("DOMContentLoaded", function () {
+  if (!document.querySelector("style[data-category-styles]")) {
+    const styleSheet = document.createElement("style");
+    styleSheet.setAttribute("data-category-styles", "true");
+    styleSheet.textContent = categoryStyles;
+    document.head.appendChild(styleSheet);
+  }
+});
+
+// Make functions globally available
+window.loadAllQuotes = loadAllQuotes;

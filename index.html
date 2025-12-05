@@ -37,6 +37,19 @@
               class="search-input"
             />
           </div>
+          <!-- Add this near your search input -->
+          <div class="category-selector">
+            <label for="categorySelect">Category:</label>
+            <select id="categorySelect">
+              <option value="">All Categories</option>
+              <!-- Options will be populated by JavaScript -->
+            </select>
+
+            <!-- Optional: Add a random quote button -->
+            <button id="randomQuotesBtn" class="btn">
+              <i class="fas fa-random"></i> Random 5
+            </button>
+          </div>
         </div>
         <div class="action-buttons">
           <button id="loadQuotes" class="btn btn-primary">

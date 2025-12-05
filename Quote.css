@@ -428,3 +428,145 @@ body {
     content: "";
   }
 }
+
+/* ============================================
+   NEW: CATEGORY SELECTOR STYLES
+   ============================================ */
+
+.category-selector {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.category-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-dropdown label {
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-dropdown label i {
+  color: var(--accent-color);
+}
+
+#categorySelect {
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-light);
+  font-size: 1rem;
+  min-width: 200px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+#categorySelect:hover {
+  border-color: var(--primary-color);
+}
+
+#categorySelect:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+#categorySelect option {
+  background: var(--card-bg);
+  color: var(--text-light);
+  padding: 10px;
+}
+
+/* ============================================
+   NEW: QUOTE CATEGORY BADGE STYLES
+   ============================================ */
+
+.quote-category {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* Category-specific colors */
+.quote-card[data-category="wisdom"] .quote-category {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.quote-card[data-category="inspiration"] .quote-category {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.quote-card[data-category="success"] .quote-category {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.quote-card[data-category="life"] .quote-category {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.quote-card[data-category="humor"] .quote-category {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN FOR CATEGORY SELECTOR
+   ============================================ */
+
+@media (max-width: 768px) {
+  .category-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-dropdown {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  #categorySelect {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-selector {
+    padding-top: 15px;
+    margin-top: 15px;
+  }
+}
