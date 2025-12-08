@@ -257,46 +257,19 @@ function capitalizeFirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-// NEW FUNCTION: Get one random quote from each category
-function getOneQuoteFromEachCategory() {
-  const selectedQuotes = [];
-  const categoryMap = {};
-
-  // Group quotes by category
-  EMBEDDED_QUOTES.forEach((quote) => {
-    if (!categoryMap[quote.category]) {
-      categoryMap[quote.category] = [];
-    }
-    categoryMap[quote.category].push(quote);
-  });
-
-  // Get one random quote from each category
-  Object.keys(categoryMap).forEach((category) => {
-    const quotesInCategory = categoryMap[category];
-    if (quotesInCategory.length > 0) {
-      const randomIndex = Math.floor(Math.random() * quotesInCategory.length);
-      selectedQuotes.push(quotesInCategory[randomIndex]);
-    }
-  });
-
-  return selectedQuotes;
-}
-
 // Main Functions
 function loadAllQuotes() {
   showLoading("Loading inspirational quotes...");
 
   // Simulate loading delay for better UX
   setTimeout(() => {
-    const selectedCategory = categorySelect ? categorySelect.value : "";
+    // Use embedded quotes
+    allQuotes = [...EMBEDDED_QUOTES];
 
-    // MODIFIED LOGIC: If "All Categories" is selected, get 1 quote from each category
-    if (selectedCategory === "") {
-      // Get one random quote from each category
-      allQuotes = getOneQuoteFromEachCategory();
-    } else {
-      // Get all quotes from the selected category
-      allQuotes = EMBEDDED_QUOTES.filter(
+    // Apply category filter if selected
+    const selectedCategory = categorySelect ? categorySelect.value : "";
+    if (selectedCategory) {
+      allQuotes = allQuotes.filter(
         (quote) => quote.category === selectedCategory
       );
     }
@@ -305,28 +278,21 @@ function loadAllQuotes() {
 
     displayQuotes(allQuotes);
 
-    // Update message based on selection
-    if (selectedCategory === "") {
-      showMessage(
-        `Loaded 1 quote from each of ${categories.length} categories`,
-        "success"
-      );
-    } else {
-      showMessage(
-        `Successfully loaded ${allQuotes.length} ${selectedCategory} quotes`,
-        "success"
-      );
-    }
+    const categoryText = selectedCategory ? `${selectedCategory} ` : "";
+    showMessage(
+      `Successfully loaded ${allQuotes.length} ${categoryText}quotes`,
+      "success"
+    );
 
     hideLoading();
-  }, 500);
+  }, 500); // 0.5 second delay for realism
 }
 
 function loadRandomQuotes(count = 5) {
   showLoading(`Loading ${count} random quotes...`);
 
   setTimeout(() => {
-    // Get random quotes (can be from any category)
+    // Get random quotes
     const shuffled = [...EMBEDDED_QUOTES].sort(() => 0.5 - Math.random());
     const randomQuotes = shuffled.slice(
       0,
@@ -381,15 +347,12 @@ function handleCategoryChange() {
   const selectedCategory = categorySelect.value;
 
   if (selectedCategory === "") {
-    // Show all quotes (but don't reload)
+    // Show all quotes
     if (allQuotes.length === 0) {
-      allQuotes = getOneQuoteFromEachCategory();
-      filteredQuotes = [...allQuotes];
-      displayQuotes(allQuotes);
-    } else {
-      filteredQuotes = [...allQuotes];
-      displayQuotes(allQuotes);
+      allQuotes = [...EMBEDDED_QUOTES];
     }
+    filteredQuotes = [...allQuotes];
+    displayQuotes(allQuotes);
   } else {
     // Filter by category
     const filtered = allQuotes.filter(
@@ -421,21 +384,10 @@ function refreshQuotes() {
   showLoading("Refreshing quotes...");
 
   setTimeout(() => {
-    const selectedCategory = categorySelect ? categorySelect.value : "";
-
-    // If "All Categories" is selected, refresh by getting new quotes from each category
-    if (selectedCategory === "") {
-      allQuotes = getOneQuoteFromEachCategory();
-      filteredQuotes = [...allQuotes];
-      displayQuotes(allQuotes);
-      showMessage("🔄 Refreshed quotes from all categories", "success");
-    } else {
-      // Just shuffle current quotes for specific category
-      const shuffledQuotes = [...allQuotes].sort(() => Math.random() - 0.5);
-      displayQuotes(shuffledQuotes);
-      showMessage("🔄 Quotes refreshed successfully!", "success");
-    }
-
+    // Shuffle current quotes
+    const shuffledQuotes = [...allQuotes].sort(() => Math.random() - 0.5);
+    displayQuotes(shuffledQuotes);
+    showMessage("🔄 Quotes refreshed successfully!", "success");
     hideLoading();
   }, 500);
 }
