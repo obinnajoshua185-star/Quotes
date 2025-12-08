@@ -1,12 +1,182 @@
 // ============================================
-// QUOTES APP - MODIFIED FRONTEND
-// Now with category filtering and 25 quotes
+// QUOTES APP - STATIC VERSION
+// Works on GitHub Pages, Vercel, Netlify, etc.
+// No server.js needed!
 // ============================================
 
-// API Configuration
-const API_BASE = "http://localhost:3000";
+// Embedded quotes database (25 quotes in 5 categories)
+const EMBEDDED_QUOTES = [
+  // ===== WISDOM (5 quotes) =====
+  {
+    id: 1,
+    quote: "Be yourself; everyone else is already taken.",
+    author: "Oscar Wilde",
+    category: "wisdom",
+  },
+  {
+    id: 2,
+    quote:
+      "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.",
+    author: "Albert Einstein",
+    category: "wisdom",
+  },
+  {
+    id: 3,
+    quote: "The only true wisdom is in knowing you know nothing.",
+    author: "Socrates",
+    category: "wisdom",
+  },
+  {
+    id: 4,
+    quote: "Knowing yourself is the beginning of all wisdom.",
+    author: "Aristotle",
+    category: "wisdom",
+  },
+  {
+    id: 5,
+    quote:
+      "The fool doth think he is wise, but the wise man knows himself to be a fool.",
+    author: "William Shakespeare",
+    category: "wisdom",
+  },
 
-// DOM Elements - NEW: Added categorySelect and randomFiveBtn
+  // ===== INSPIRATION (5 quotes) =====
+  {
+    id: 6,
+    quote: "The only way to do great work is to love what you do.",
+    author: "Steve Jobs",
+    category: "inspiration",
+  },
+  {
+    id: 7,
+    quote: "Believe you can and you're halfway there.",
+    author: "Theodore Roosevelt",
+    category: "inspiration",
+  },
+  {
+    id: 8,
+    quote:
+      "The future belongs to those who believe in the beauty of their dreams.",
+    author: "Eleanor Roosevelt",
+    category: "inspiration",
+  },
+  {
+    id: 9,
+    quote: "It always seems impossible until it's done.",
+    author: "Nelson Mandela",
+    category: "inspiration",
+  },
+  {
+    id: 10,
+    quote: "Don't watch the clock; do what it does. Keep going.",
+    author: "Sam Levenson",
+    category: "inspiration",
+  },
+
+  // ===== SUCCESS (5 quotes) =====
+  {
+    id: 11,
+    quote:
+      "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    author: "Winston Churchill",
+    category: "success",
+  },
+  {
+    id: 12,
+    quote: "The way to get started is to quit talking and begin doing.",
+    author: "Walt Disney",
+    category: "success",
+  },
+  {
+    id: 13,
+    quote:
+      "Success is walking from failure to failure with no loss of enthusiasm.",
+    author: "Winston Churchill",
+    category: "success",
+  },
+  {
+    id: 14,
+    quote: "Don't be afraid to give up the good to go for the great.",
+    author: "John D. Rockefeller",
+    category: "success",
+  },
+  {
+    id: 15,
+    quote: "I find that the harder I work, the more luck I seem to have.",
+    author: "Thomas Jefferson",
+    category: "success",
+  },
+
+  // ===== LIFE (5 quotes) =====
+  {
+    id: 16,
+    quote: "Life is what happens to you while you're busy making other plans.",
+    author: "John Lennon",
+    category: "life",
+  },
+  {
+    id: 17,
+    quote: "You only live once, but if you do it right, once is enough.",
+    author: "Mae West",
+    category: "life",
+  },
+  {
+    id: 18,
+    quote:
+      "In the end, it's not the years in your life that count. It's the life in your years.",
+    author: "Abraham Lincoln",
+    category: "life",
+  },
+  {
+    id: 19,
+    quote: "Life is really simple, but we insist on making it complicated.",
+    author: "Confucius",
+    category: "life",
+  },
+  {
+    id: 20,
+    quote: "The purpose of our lives is to be happy.",
+    author: "Dalai Lama",
+    category: "life",
+  },
+
+  // ===== HUMOR (5 quotes) =====
+  {
+    id: 21,
+    quote: "I'm not arguing, I'm just explaining why I'm right.",
+    author: "Anonymous",
+    category: "humor",
+  },
+  {
+    id: 22,
+    quote: "I'm not lazy, I'm on energy saving mode.",
+    author: "Anonymous",
+    category: "humor",
+  },
+  {
+    id: 23,
+    quote:
+      "I told my computer I needed a break, and now it won't stop sending me KitKat ads.",
+    author: "Anonymous",
+    category: "humor",
+  },
+  {
+    id: 24,
+    quote:
+      "I don't need a hairstylist, my pillow gives me a new hairstyle every morning.",
+    author: "Anonymous",
+    category: "humor",
+  },
+  {
+    id: 25,
+    quote:
+      "My bed is a magical place where I suddenly remember everything I was supposed to do.",
+    author: "Anonymous",
+    category: "humor",
+  },
+];
+
+// DOM Elements
 const loadQuotesBtn = document.getElementById("loadQuotes");
 const refreshQuotesBtn = document.getElementById("refreshQuotes");
 const clearQuotesBtn = document.getElementById("clearQuotes");
@@ -15,36 +185,32 @@ const quotesContainer = document.getElementById("quotesContainer");
 const messageDiv = document.getElementById("message");
 const loadingMessageDiv = document.getElementById("loadingMessage");
 const randomQuoteBtn = document.getElementById("randomQuoteBtn");
-const categorySelect = document.getElementById("categorySelect"); // ✅ NEW
-const randomFiveBtn = document.getElementById("randomFiveBtn"); // ✅ NEW
+const categorySelect = document.getElementById("categorySelect");
+const randomFiveBtn = document.getElementById("randomFiveBtn");
 
 // State Management
 let allQuotes = [];
 let filteredQuotes = [];
-let categories = []; // ✅ NEW: Store categories
+let categories = [];
 
 // Event Listeners
 document.addEventListener("DOMContentLoaded", function () {
   initializeApp();
 });
 
-async function initializeApp() {
-  // ✅ NEW: Load categories first
-  await loadCategories();
+function initializeApp() {
+  // Initialize categories
+  initializeCategories();
 
-  // Add event listeners to buttons
+  // Add event listeners
   if (loadQuotesBtn) loadQuotesBtn.addEventListener("click", loadAllQuotes);
   if (refreshQuotesBtn)
     refreshQuotesBtn.addEventListener("click", refreshQuotes);
   if (clearQuotesBtn) clearQuotesBtn.addEventListener("click", clearQuotes);
   if (searchInput) searchInput.addEventListener("input", handleSearch);
   if (randomQuoteBtn) randomQuoteBtn.addEventListener("click", loadRandomQuote);
-
-  // ✅ NEW: Category selector event
   if (categorySelect)
     categorySelect.addEventListener("change", handleCategoryChange);
-
-  // ✅ NEW: Random 5 button event
   if (randomFiveBtn)
     randomFiveBtn.addEventListener("click", () => loadRandomQuotes(5));
 
@@ -52,30 +218,25 @@ async function initializeApp() {
   showWelcomeMessage();
 }
 
-// ✅ NEW FUNCTION: Load categories from API
-async function loadCategories() {
-  try {
-    const response = await fetch(`${API_BASE}/categories`);
-    if (response.ok) {
-      categories = await response.json();
-      populateCategoryDropdown();
-      console.log(`Loaded ${categories.length} categories`);
-    }
-  } catch (error) {
-    console.error("Error loading categories:", error);
-    // Fallback categories
-    categories = [
-      { name: "wisdom", count: 5 },
-      { name: "inspiration", count: 5 },
-      { name: "success", count: 5 },
-      { name: "life", count: 5 },
-      { name: "humor", count: 5 },
-    ];
-    populateCategoryDropdown();
-  }
+// Initialize categories from embedded quotes
+function initializeCategories() {
+  // Extract unique categories
+  const categorySet = new Set();
+  EMBEDDED_QUOTES.forEach((quote) => {
+    if (quote.category) categorySet.add(quote.category);
+  });
+
+  // Count quotes per category
+  categories = Array.from(categorySet).map((cat) => {
+    const count = EMBEDDED_QUOTES.filter((q) => q.category === cat).length;
+    return { name: cat, count: count };
+  });
+
+  // Populate dropdown
+  populateCategoryDropdown();
 }
 
-// ✅ NEW FUNCTION: Populate category dropdown
+// Populate category dropdown
 function populateCategoryDropdown() {
   if (!categorySelect) return;
 
@@ -91,93 +252,103 @@ function populateCategoryDropdown() {
   });
 }
 
-// ✅ NEW FUNCTION: Capitalize first letter
+// Capitalize first letter
 function capitalizeFirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-// ✅ MODIFIED: Now supports category filtering
-async function loadAllQuotes() {
+// NEW FUNCTION: Get one random quote from each category
+function getOneQuoteFromEachCategory() {
+  const selectedQuotes = [];
+  const categoryMap = {};
+
+  // Group quotes by category
+  EMBEDDED_QUOTES.forEach((quote) => {
+    if (!categoryMap[quote.category]) {
+      categoryMap[quote.category] = [];
+    }
+    categoryMap[quote.category].push(quote);
+  });
+
+  // Get one random quote from each category
+  Object.keys(categoryMap).forEach((category) => {
+    const quotesInCategory = categoryMap[category];
+    if (quotesInCategory.length > 0) {
+      const randomIndex = Math.floor(Math.random() * quotesInCategory.length);
+      selectedQuotes.push(quotesInCategory[randomIndex]);
+    }
+  });
+
+  return selectedQuotes;
+}
+
+// Main Functions
+function loadAllQuotes() {
   showLoading("Loading inspirational quotes...");
 
-  try {
-    // ✅ NEW: Get selected category
+  // Simulate loading delay for better UX
+  setTimeout(() => {
     const selectedCategory = categorySelect ? categorySelect.value : "";
 
-    // ✅ MODIFIED: Build URL with optional category filter
-    let url = `${API_BASE}/quotes`;
-    if (selectedCategory) {
-      url += `?category=${selectedCategory}`;
+    // MODIFIED LOGIC: If "All Categories" is selected, get 1 quote from each category
+    if (selectedCategory === "") {
+      // Get one random quote from each category
+      allQuotes = getOneQuoteFromEachCategory();
+    } else {
+      // Get all quotes from the selected category
+      allQuotes = EMBEDDED_QUOTES.filter(
+        (quote) => quote.category === selectedCategory
+      );
     }
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    allQuotes = await response.json();
     filteredQuotes = [...allQuotes];
 
     displayQuotes(allQuotes);
 
-    // ✅ MODIFIED: Show category in success message
-    const categoryText = selectedCategory ? `${selectedCategory} ` : "";
-    showMessage(
-      `Successfully loaded ${allQuotes.length} ${categoryText}quotes`,
-      "success"
-    );
-  } catch (error) {
-    console.error("Error loading quotes:", error);
-    showMessage(
-      "Failed to load quotes. Please make sure the server is running on port 3000.",
-      "error"
-    );
-    displayErrorState();
-  } finally {
-    hideLoading();
-  }
-}
-
-// ✅ NEW FUNCTION: Load random quotes (count parameter)
-async function loadRandomQuotes(count = 5) {
-  showLoading(`Loading ${count} random quotes...`);
-
-  try {
-    const response = await fetch(`${API_BASE}/quotes/random?count=${count}`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Update message based on selection
+    if (selectedCategory === "") {
+      showMessage(
+        `Loaded 1 quote from each of ${categories.length} categories`,
+        "success"
+      );
+    } else {
+      showMessage(
+        `Successfully loaded ${allQuotes.length} ${selectedCategory} quotes`,
+        "success"
+      );
     }
 
-    const randomQuotes = await response.json();
+    hideLoading();
+  }, 500);
+}
 
-    // Update state with random quotes
+function loadRandomQuotes(count = 5) {
+  showLoading(`Loading ${count} random quotes...`);
+
+  setTimeout(() => {
+    // Get random quotes (can be from any category)
+    const shuffled = [...EMBEDDED_QUOTES].sort(() => 0.5 - Math.random());
+    const randomQuotes = shuffled.slice(
+      0,
+      Math.min(count, EMBEDDED_QUOTES.length)
+    );
+
     allQuotes = randomQuotes;
     filteredQuotes = [...randomQuotes];
 
     displayQuotes(randomQuotes);
     showMessage(`Loaded ${randomQuotes.length} random quotes`, "success");
-  } catch (error) {
-    console.error("Error loading random quotes:", error);
-    showMessage("Error loading random quotes", "error");
-  } finally {
+
     hideLoading();
-  }
+  }, 500);
 }
 
-// ✅ MODIFIED: Load single random quote
-async function loadRandomQuote() {
+function loadRandomQuote() {
   showLoading("Fetching a random quote...");
 
-  try {
-    const response = await fetch(`${API_BASE}/quote`);
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const randomQuote = await response.json();
+  setTimeout(() => {
+    const randomIndex = Math.floor(Math.random() * EMBEDDED_QUOTES.length);
+    const randomQuote = EMBEDDED_QUOTES[randomIndex];
 
     // Display just the random quote
     quotesContainer.innerHTML = `
@@ -201,25 +372,26 @@ async function loadRandomQuote() {
     filteredQuotes = [randomQuote];
 
     showMessage("🎲 Random quote loaded successfully!", "success");
-  } catch (error) {
-    console.error("Error loading random quote:", error);
-    showMessage("Error loading random quote", "error");
-  } finally {
+
     hideLoading();
-  }
+  }, 500);
 }
 
-// ✅ NEW FUNCTION: Handle category change
 function handleCategoryChange() {
   const selectedCategory = categorySelect.value;
 
   if (selectedCategory === "") {
-    // If "All Categories" is selected, show current quotes
-    if (allQuotes.length > 0) {
+    // Show all quotes (but don't reload)
+    if (allQuotes.length === 0) {
+      allQuotes = getOneQuoteFromEachCategory();
+      filteredQuotes = [...allQuotes];
+      displayQuotes(allQuotes);
+    } else {
+      filteredQuotes = [...allQuotes];
       displayQuotes(allQuotes);
     }
   } else {
-    // Filter existing quotes by category
+    // Filter by category
     const filtered = allQuotes.filter(
       (quote) => quote.category === selectedCategory
     );
@@ -233,15 +405,14 @@ function handleCategoryChange() {
       );
     } else if (allQuotes.length > 0) {
       showMessage(
-        `No ${selectedCategory} quotes in current selection. Try loading quotes first.`,
+        `No ${selectedCategory} quotes in current selection`,
         "warning"
       );
     }
   }
 }
 
-// MODIFIED refreshQuotes to use new random function
-async function refreshQuotes() {
+function refreshQuotes() {
   if (allQuotes.length === 0) {
     showMessage("No quotes to refresh. Please load quotes first.", "warning");
     return;
@@ -249,27 +420,35 @@ async function refreshQuotes() {
 
   showLoading("Refreshing quotes...");
 
-  try {
-    // ✅ MODIFIED: Use new random quotes function
-    await loadRandomQuotes(5);
-  } catch (error) {
-    console.error("Error refreshing quotes:", error);
-    showMessage("Error refreshing quotes", "error");
-  } finally {
+  setTimeout(() => {
+    const selectedCategory = categorySelect ? categorySelect.value : "";
+
+    // If "All Categories" is selected, refresh by getting new quotes from each category
+    if (selectedCategory === "") {
+      allQuotes = getOneQuoteFromEachCategory();
+      filteredQuotes = [...allQuotes];
+      displayQuotes(allQuotes);
+      showMessage("🔄 Refreshed quotes from all categories", "success");
+    } else {
+      // Just shuffle current quotes for specific category
+      const shuffledQuotes = [...allQuotes].sort(() => Math.random() - 0.5);
+      displayQuotes(shuffledQuotes);
+      showMessage("🔄 Quotes refreshed successfully!", "success");
+    }
+
     hideLoading();
-  }
+  }, 500);
 }
 
 function clearQuotes() {
   allQuotes = [];
   filteredQuotes = [];
   if (searchInput) searchInput.value = "";
-  if (categorySelect) categorySelect.value = ""; // ✅ NEW: Reset category
+  if (categorySelect) categorySelect.value = "";
   showWelcomeMessage();
   showMessage("🗑️ All quotes cleared", "info");
 }
 
-// ✅ MODIFIED: Now searches category too
 function handleSearch() {
   const searchTerm = searchInput.value.toLowerCase().trim();
 
@@ -280,7 +459,7 @@ function handleSearch() {
       (quote) =>
         quote.quote.toLowerCase().includes(searchTerm) ||
         quote.author.toLowerCase().includes(searchTerm) ||
-        (quote.category && quote.category.toLowerCase().includes(searchTerm)) // ✅ NEW
+        (quote.category && quote.category.toLowerCase().includes(searchTerm))
     );
   }
 
@@ -291,7 +470,7 @@ function handleSearch() {
   }
 }
 
-// ✅ MODIFIED: Now shows category badge
+// Display Functions
 function displayQuotes(quotes) {
   if (!quotesContainer) return;
 
@@ -341,39 +520,20 @@ function displayNoResults(searchTerm = "") {
   `;
 }
 
-function displayErrorState() {
-  if (!quotesContainer) return;
-
-  quotesContainer.innerHTML = `
-    <div class="error-state">
-      <i class="fas fa-exclamation-triangle"></i>
-      <h3>Connection Error</h3>
-      <p>Unable to connect to the quotes server</p>
-      <button onclick="loadAllQuotes()" class="btn btn-primary">
-        <i class="fas fa-redo"></i> Try Again
-      </button>
-    </div>
-  `;
-}
-
-// ✅ MODIFIED: Updated welcome message
 function showWelcomeMessage() {
   if (!quotesContainer) return;
-
-  const totalCategories = categories.length || 5;
-  const totalQuotes = categories.reduce((sum, cat) => sum + cat.count, 0) || 25;
 
   quotesContainer.innerHTML = `
     <div class="welcome-state">
       <i class="fas fa-lightbulb"></i>
       <h3>Welcome to Quote Explorer</h3>
-      <p>Now with ${totalQuotes} quotes across ${totalCategories} categories!</p>
-      <p>Select a category from the dropdown or click "Load Quotes" to begin</p>
+      <p>Discover ${EMBEDDED_QUOTES.length} inspirational quotes across ${categories.length} categories!</p>
+      <p>Select a category or click "Load Quotes" to begin</p>
     </div>
   `;
 }
 
-// Utility Functions (unchanged but included for completeness)
+// Utility Functions
 function showMessage(text, type = "info") {
   if (!messageDiv) return;
 
@@ -430,7 +590,7 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-// ✅ NEW: Inject category styles
+// Category styles (inject if not already present)
 const categoryStyles = `
 .quote-category {
     display: inline-block;
@@ -487,3 +647,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Make functions globally available
 window.loadAllQuotes = loadAllQuotes;
+window.loadRandomQuote = loadRandomQuote;
+
+console.log("✅ Quotes App (Static Version) Loaded Successfully");
+console.log(`📊 Total Quotes: ${EMBEDDED_QUOTES.length}`);
+console.log(`📁 Categories: ${categories.map((c) => c.name).join(", ")}`);
